@@ -45,12 +45,12 @@ def addFolder():
   else:
       print("")
   if createFolder(f_path, f_name) == False:
-    print("Not created")
+    print("File Not created")
     time.sleep(2)
     return
   else:
-    time.sleep(2)
-    cls()
+    print("")
+  
   createLog(f_path + l_name + '.txt')
   #append to list of classes folder - Folders
   folders_list.append(Folders(f_name, l_name, f_path, f_h_decision, f_chat_id))
@@ -58,6 +58,7 @@ def addFolder():
 
 def cls():
   os.system('cls' if os.name=='nt' else 'clear') 
+
 
 def createFolder(path, folder):
   if os.path.exists(path+folder) == True:
@@ -74,15 +75,18 @@ def createFolder(path, folder):
 
 
 def createLog(log):
-  print("Making log..")
-  making_log = open(log,"w+")
-  print("Log created")
-  making_log.close
-  time.sleep(2)
+  if os.path.isfile(log) == True:
+    print("Log already exist")
+  else:
+    print("Making log..")
+    making_log = open(log,"w+")
+    print("Log created")
+    making_log.close
+    time.sleep(2)
 
 
 def get_info():
-  tokenBot = input("BotToken:  ")
+  
   while True:
     cls()
     dec1 = input("Add Folder? (y/n):  ").upper()
@@ -108,7 +112,7 @@ def renameToMd5(path, file):
   #rename file
   fileName, fileExtension = os.path.splitext(file)
   os.rename(path+file, path+digest+fileExtension)
-  print(file + " foi renomeado para:" + digest + fileExtension)
+  print(file + " foi renomeado para:" + digest + fileExtension + '\n')
 
 
 def renAllFoldFiles():
@@ -123,6 +127,39 @@ def renAllFoldFiles():
           renameToMd5(pathAndFolder, file)
 
 
+def sendToLog(path, log, file):
+  print("")
+
+
+def sendAllToTelegram():
+  for folder in folders_list:
+    for file in os.listdir(folder.path + folder.folder_name + '/'):
+      print("let's check if the " + file + " already exists in the log\n")
+      open_log = open(folder.path + folder.log_name + '.txt', 'r')
+      with open_log as log:
+        for line in log:
+          if file in line:
+            print("The file name already exists in the log\n\n")
+            
+          else:
+            print("file not found in the log")
+            while True:
+              if sendToTelegram(folder.path, folder.folder_name, file, folder.chat_id, tokenBot) == True:
+                print("File sent\n\n")
+                sendToLog(folder.path, folder.log_name,  file)
+                break
+              else:
+                print("Error! File not sent. Retrying...\n")
+                continue
+        open_log.close()
+
+      
+
+
+def sendToTelegram(path, folder, file, chat_id, token):
+  path_file = path + folder + '/' + file
+  print('Finjindo q enviado')
+  return True
 
 class Folders:
   def __init__(self, f_name, l_name, f_path, f_h_decision, f_chat_id):
@@ -141,6 +178,7 @@ class Folders:
 
 if __name__ == '__main__' :
   folders_list = []
+  tokenBot = input("BotToken:  ")
 
   get_info()
   for folder in folders_list:
@@ -148,5 +186,10 @@ if __name__ == '__main__' :
     print("")
     
   renAllFoldFiles()
+
+  print("\n\nSending existing files to the telegram")
+  sendAllToTelegram()
+
+
 
   
