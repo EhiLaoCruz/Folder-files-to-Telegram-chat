@@ -1,4 +1,4 @@
-import os, time
+import os, time, hashlib
 
 
 def addFolder():
@@ -90,6 +90,7 @@ def get_info():
       addFolder()
       continue
     elif dec1 == 'N':
+      cls()
       break
     else:
       print("Invalid")
@@ -97,22 +98,28 @@ def get_info():
 
 
 def renameToMd5(path, file):
-  print("aqui ficaria o código de renomear para hash")
-  print(path)
-  print(file)
-  print(path + file)
+  # Get hash
+  md5_hash = hashlib.md5()
+  a_file = open(path + file, "rb")
+  content = a_file.read()
+  md5_hash.update(content)
+  digest = md5_hash.hexdigest()
+
+  #rename file
+  fileName, fileExtension = os.path.splitext(file)
+  os.rename(path+file, path+digest+fileExtension)
+  print(file + " foi renomeado para:" + digest + fileExtension)
 
 
 def renAllFoldFiles():
   print("Rename all files to md5")
   for folder in folders_list:
-    print("Hash decision for this folder " + folder.hashdecision)
+    print("\n\nHash decision for this folder - "+ folder.folder_name + ' - :  ' + folder.hashdecision)
     if folder.hashdecision == 'ON':
-      pathAndFolder = folder.path + folder.folder_name + '/'
+      pathAndFolder = folder.path + folder.folder_name + '/' #add / 
       print("Renaming files in this folder " + pathAndFolder)
-      for file in os.listdir(pathAndFolder):
-        pathWithFile = pathAndFolder + file
-        if os.path.isfile(pathWithFile) == True:
+      for file in os.listdir(pathAndFolder): 
+        if os.path.isfile(pathAndFolder + file) == True:
           renameToMd5(pathAndFolder, file)
 
 
@@ -134,8 +141,12 @@ class Folders:
 
 if __name__ == '__main__' :
   folders_list = []
+
   get_info()
   for folder in folders_list:
     Folders.finfo(folder)
     print("")
+    
   renAllFoldFiles()
+
+  
