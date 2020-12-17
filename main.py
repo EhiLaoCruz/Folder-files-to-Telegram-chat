@@ -176,9 +176,6 @@ def sendAllToTelegram():
         print("Not send.. file already exist in log")
       
 
-      
-# 1431760610:AAGiiukDd3X4moKQ_eS-GOmypSc7_sT2s0w
-# -1001375757885
 def sendToTelegram(path, folder, file, chat, token):
   
   fileName, fileExtension = os.path.splitext(file)
