@@ -4,8 +4,6 @@ from watchdog.events import FileSystemEventHandler
 
 
 
-
-
 def addFolder():
   
   while True:
@@ -134,7 +132,7 @@ def renameToMd5(path, file):
   fileName, fileExtension = os.path.splitext(file)
   newMd5Name = digest + fileExtension
   os.rename(path+file, path+digest+fileExtension)
-  print(file + " foi renomeado para:" + digest + fileExtension + '\n')
+  print(file + " new name is:" + digest + fileExtension + '\n')
   return newMd5Name
 
 
