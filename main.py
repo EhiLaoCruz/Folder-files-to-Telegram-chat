@@ -1,6 +1,7 @@
-import os, time, hashlib, telepot, logging
+import os, time, hashlib, telepot
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
+
 
 
 
@@ -131,8 +132,10 @@ def renameToMd5(path, file):
 
   #rename file
   fileName, fileExtension = os.path.splitext(file)
+  newMd5Name = digest + fileExtension
   os.rename(path+file, path+digest+fileExtension)
   print(file + " foi renomeado para:" + digest + fileExtension + '\n')
+  return newMd5Name
 
 
 def renAllFoldFiles():
@@ -152,6 +155,8 @@ def sendToLog(path, log, file):
 
 
 def sendAllToTelegram():
+  print("Don't insert archives in this process!")
+  print("Wait untill the wait for the monitoring step")
   global bot
   for folder in folders_list:
     print('Searching files in ' + folder.path + folder.folder_name + '/' + ' \n')
@@ -163,7 +168,8 @@ def sendAllToTelegram():
         else:
           print("We don't have the file in the log")
           writeInLog(folder.path, folder.log_name, file)
-        
+          os.remove(folder.path + folder.folder_name + '/' + file)
+          time.sleep(3)
 
 
       else:
@@ -209,13 +215,6 @@ class Folders:
     self.chat_id = f_chat_id
 
 
-class MyFileHandler(FileSystemEventHandler):
-  def on_created(self, event):
-        print(f'event type: {event.event_type}  path : {event.src_path}')
-        filename = os.path.basename(event.src_path)
-        print(filename)
-
-  
   def finfo(self):
     print("-Folder: " + self.path + self.folder_name)
     print("-Log: " + self.path + self.log_name + '.txt')
@@ -223,10 +222,54 @@ class MyFileHandler(FileSystemEventHandler):
     print("-Chat_id: " + self.chat_id)
 
 
+class MyFileHandler(FileSystemEventHandler):
+  def on_created(self, event):
+      print(f'event type: {event.event_type}  path : {event.src_path}')
+      file = os.path.basename(event.src_path)
+      path = os.path.dirname(event.src_path)
+        
+      print('file: ' + file)   
+      print('path: ' + path)
+      
+      if folder.hashdecision == 'ON':
+        print("convert " + file + " to md5")
+        file = renameToMd5(path + '/', file)
+        time.sleep(1)
+        print("New name is:" + file)
+      else:
+        print("Hash decision off")
+      print("\nLet's check if the " + file + " already exists in the log\n")
+      if checkLog(folder.path, folder.folder_name, folder.log_name, file) == False:
+        print("It's a new file!")
+        if sendToTelegram(folder.path, folder.folder_name, file, folder.chat_id, tokenBot) == False:
+          print("File not send")
+        else:
+          print("We don't have the file in the log")
+          writeInLog(folder.path, folder.log_name, file)
+          os.remove(folder.path + folder.folder_name + '/' + file)
+          time.sleep(3)
+
+
+      else:
+        print("Not send.. file already exist in log")
+      
+
+
+
+
+
 if __name__ == '__main__' :
+  #declaration
   folders_list = []
+  paths = []
+  observers = []
+  event_handler = MyFileHandler()
+  observer = Observer()
+
+
   tokenBot = input("BotToken:  ")
   bot = telepot.Bot(tokenBot)
+
 
   get_info()
   for folder in folders_list:
@@ -237,6 +280,36 @@ if __name__ == '__main__' :
 
   print("\n\nSending existing files to the telegram")
   sendAllToTelegram()
+
+  
+  
+  for folder in folders_list:
+    infolder = folder.path + folder.folder_name
+    targetPath = str(infolder).rstrip()
+    observer.schedule(event_handler, targetPath)
+    observers.append(observer)
+  
+  for i in observers:
+    print(i)
+  print("monitoring Folders with watchdog, now you can add more files to folders")
+  observer.start()
+
+  
+
+  try:
+      while True:
+          # poll every second
+          time.sleep(1)
+  except KeyboardInterrupt:
+      for o in observers:
+          o.unschedule_all()
+          # stop observer if interrupted
+          o.stop()
+  for o in observers:
+      # Wait until the thread terminates before exit
+      o.join()
+
+
 
 
 
