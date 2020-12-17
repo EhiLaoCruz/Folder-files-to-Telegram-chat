@@ -1,4 +1,8 @@
-import os, time, hashlib
+import os, time, hashlib, telepot, logging
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+
+
 
 
 def addFolder():
@@ -55,6 +59,22 @@ def addFolder():
   #append to list of classes folder - Folders
   folders_list.append(Folders(f_name, l_name, f_path, f_h_decision, f_chat_id))
 
+
+def checkLog(path, folder, log_name, file):
+  print("Lets search " + file)
+  print("in log " + path + log_name + '.txt' + " ..")
+  open_log = open(path + log_name + '.txt', 'a+')
+  with open_log as log:
+    log.seek(0)
+    lines = log.read().splitlines()
+    if file in lines:
+      ("File name already exists in the log!")
+      open_log.close()
+      return True
+    else:
+      open_log.close()
+      return False
+    
 
 def cls():
   os.system('cls' if os.name=='nt' else 'clear') 
@@ -132,34 +152,53 @@ def sendToLog(path, log, file):
 
 
 def sendAllToTelegram():
+  global bot
   for folder in folders_list:
+    print('Searching files in ' + folder.path + folder.folder_name + '/' + ' \n')
     for file in os.listdir(folder.path + folder.folder_name + '/'):
-      print("let's check if the " + file + " already exists in the log\n")
-      open_log = open(folder.path + folder.log_name + '.txt', 'r')
-      with open_log as log:
-        for line in log:
-          if file in line:
-            print("The file name already exists in the log\n\n")
-            
-          else:
-            print("file not found in the log")
-            while True:
-              if sendToTelegram(folder.path, folder.folder_name, file, folder.chat_id, tokenBot) == True:
-                print("File sent\n\n")
-                sendToLog(folder.path, folder.log_name,  file)
-                break
-              else:
-                print("Error! File not sent. Retrying...\n")
-                continue
-        open_log.close()
+      print("\nLet's check if the " + file + " already exists in the log\n")
+      if checkLog(folder.path, folder.folder_name, folder.log_name, file) == False:
+        if sendToTelegram(folder.path, folder.folder_name, file, folder.chat_id, tokenBot) == False:
+          print("File not send")
+        else:
+          print("We don't have the file in the log")
+          writeInLog(folder.path, folder.log_name, file)
+        
 
+
+      else:
+        print("Not send.. file already exist in log")
       
 
-
-def sendToTelegram(path, folder, file, chat_id, token):
+      
+# 1431760610:AAGiiukDd3X4moKQ_eS-GOmypSc7_sT2s0w
+# -1001375757885
+def sendToTelegram(path, folder, file, chat, token):
+  
+  fileName, fileExtension = os.path.splitext(file)
   path_file = path + folder + '/' + file
-  print('Finjindo q enviado')
-  return True
+  if fileExtension != '.gif':
+    doc = open(path_file, 'rb')
+    
+    
+    try:
+      bot.sendDocument(chat, doc, caption=file)
+    except telepot.exception.TelegramError as teleerror:
+      print(teleerror)
+      return False
+    else:
+      print('file send')
+
+def writeInLog(path, log_name, file):
+  log = log_name + '.txt'
+  print("Writing the file in " + path + log)
+  with open(path + log, "a+") as log:
+    log.seek(0)
+    lines = log.read().splitlines()
+    log.write(file + "\n")
+    log.close()
+  print("Saved in log")
+
 
 class Folders:
   def __init__(self, f_name, l_name, f_path, f_h_decision, f_chat_id):
@@ -168,6 +207,14 @@ class Folders:
     self.path = f_path
     self.hashdecision = f_h_decision
     self.chat_id = f_chat_id
+
+
+class MyFileHandler(FileSystemEventHandler):
+  def on_created(self, event):
+        print(f'event type: {event.event_type}  path : {event.src_path}')
+        filename = os.path.basename(event.src_path)
+        print(filename)
+
   
   def finfo(self):
     print("-Folder: " + self.path + self.folder_name)
@@ -179,6 +226,7 @@ class Folders:
 if __name__ == '__main__' :
   folders_list = []
   tokenBot = input("BotToken:  ")
+  bot = telepot.Bot(tokenBot)
 
   get_info()
   for folder in folders_list:
