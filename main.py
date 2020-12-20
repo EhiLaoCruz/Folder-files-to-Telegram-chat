@@ -4,6 +4,7 @@ from watchdog.events import FileSystemEventHandler
 
 
 
+
 def addFolder():
   
   while True:
@@ -148,13 +149,10 @@ def renAllFoldFiles():
           renameToMd5(pathAndFolder, file)
 
 
-def sendToLog(path, log, file):
-  print("")
-
 
 def sendAllToTelegram():
   print("Don't insert archives in this process!")
-  print("Wait untill the wait for the monitoring step")
+  print("Wait the monitoring step")
   global bot
   for folder in folders_list:
     print('Searching files in ' + folder.path + folder.folder_name + '/' + ' \n')
@@ -176,11 +174,11 @@ def sendAllToTelegram():
 
 def sendToTelegram(path, folder, file, chat, token):
   
-  fileName, fileExtension = os.path.splitext(file)
+  fileName, fEx = os.path.splitext(file)
   path_file = path + folder + '/' + file
-  if fileExtension != '.gif':
+
+  if fEx != '.gif':
     doc = open(path_file, 'rb')
-    
     
     try:
       bot.sendDocument(chat, doc, caption=file)
@@ -189,6 +187,40 @@ def sendToTelegram(path, folder, file, chat, token):
       return False
     else:
       print('file send')
+
+  if fEx == '.gif':
+    doc = open(path_file, 'rb')
+    
+    try:
+      bot.sendDocument(chat, doc, caption=file)
+    except telepot.exception.TelegramError as teleerror:
+      print(teleerror)
+      return False
+    else:
+      print('Gif send')
+
+  elif fEx == '.png' or fEx == '.jpeg' or fEx == '.jpg':
+    doc = open(path_file, 'rb')
+    
+    try:
+      bot.sendPhoto(chat, doc, caption=file)
+    except telepot.exception.TelegramError as teleerror:
+      print(teleerror)
+      return False
+    else:
+      print('file send')
+
+  elif fEx == '.mp4' or fEx == '.webm' or fEx == '.avi' or fEx == '.flv' or fEx == '.wmv ' or fEx == '.mkv':
+    doc = open(path_file, 'rb')
+    
+    try:
+      bot.sendVideo(chat, doc, caption=file)
+    except telepot.exception.TelegramError as teleerror:
+      print(teleerror)
+      return False
+    else:
+      print('file send')
+
 
 def writeInLog(path, log_name, file):
   log = log_name + '.txt'
@@ -236,13 +268,12 @@ class MyFileHandler(FileSystemEventHandler):
         print("\nLet's check if the " + file + " already exists in the log\n")
         if checkLog(folder.path, folder.folder_name, folder.log_name, file) == False:
           print("It's a new file!")
-          if sendToTelegram(folder.path, folder.folder_name, file, folder.chat_id, tokenBot) == False:
-            print("File not send")
-          else:
-            print("We don't have the file in the log")
-            writeInLog(folder.path, folder.log_name, file)
-            os.remove(folder.path + folder.folder_name + '/' + file)
-            time.sleep(3)
+          sendToTelegram(folder.path, folder.folder_name, file, folder.chat_id, tokenBot)
+        
+          print("We don't have the file in the log")
+          writeInLog(folder.path, folder.log_name, file)
+          os.remove(folder.path + folder.folder_name + '/' + file)
+          time.sleep(3)
         else:
           print("Not send.. file already exist in log")
       else:
@@ -261,7 +292,11 @@ if __name__ == '__main__' :
   event_handler = MyFileHandler()
   observer = Observer()
 
-
+  """
+  Add folder manually
+  folders_list.append(Folders(f_name, l_name, f_path, f_h_decision, f_chat_id))  
+  
+  """
   tokenBot = input("BotToken:  ")
   bot = telepot.Bot(tokenBot)
 
