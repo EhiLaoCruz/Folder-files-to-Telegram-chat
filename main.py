@@ -206,7 +206,7 @@ def sendToTelegram(path, folder, file, chat, token):
       bot.sendPhoto(chat, doc, caption=file)
     except telepot.exception.TelegramError as teleerror:
       print(teleerror)
-      return False
+      
     else:
       print('file send')
 
@@ -217,7 +217,7 @@ def sendToTelegram(path, folder, file, chat, token):
       bot.sendVideo(chat, doc, caption=file)
     except telepot.exception.TelegramError as teleerror:
       print(teleerror)
-      return False
+      
     else:
       print('file send')
 
